@@ -31,9 +31,7 @@ llm = ChatOpenAI(
 qa_chain = ConversationalRetrievalChain.from_llm(llm, retriever)
 
 
-
-
-def main() -> None:
+if __name__ == "__main__":        
     chat_history = []
     print("Ask me anything about the lecture notes!  (type 'exit' to quit)\n")
     while True:
@@ -54,6 +52,3 @@ def main() -> None:
 
         chat_history.append((question, answer))
 
-
-if __name__ == "__main__":
-    main()

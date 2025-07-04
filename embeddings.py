@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 client = OpenAI(
-  api_key=os.getenv("OPEN_AI_KEY")
+  api_key=os.getenv("OPENAI_API_KEY")
 )
 
 # def get_embedding(text, model="text-embedding-3-small"):
