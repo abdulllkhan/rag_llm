@@ -1,53 +1,59 @@
-from langchain_community.vectorstores import FAISS
-from embeddings import CustomEmbedding
+import warnings, os, dotenv
 
-# embedding = CustomEmbedding()
 
-# # Load saved index
-# db = FAISS.load_local("vector_db/qc_lecture_db", embedding)
+from langchain_core._api import LangChainDeprecationWarning
+warnings.filterwarnings("ignore", category=LangChainDeprecationWarning)  
 
-# query = "What are quantum gates?"
+from langchain_openai import ChatOpenAI              
+from langchain_community.vectorstores import FAISS   
+from langchain.chains import ConversationalRetrievalChain
+from embeddings import CustomEmbedding               
 
-# results_with_scores = db.similarity_search_with_score(query, k=3)
-# for doc, score in results_with_scores:
-#     print(f"Score: {score}\n{doc.page_content}\n")
-
-import os
-import dotenv 
-from openai import OpenAI
-
-dotenv.load_dotenv()
-
-client = OpenAI(
-  api_key=os.getenv("OPEN_AI_KEY")
-)
-
+dotenv.load_dotenv()                                 
 
 embedding = CustomEmbedding()
-db = FAISS.load_local("vector_db/qc_lecture_db", embedding,
-                      allow_dangerous_deserialization=True)
 
-
-question = "What are quantum gates?"
-docs_with_scores = db.similarity_search_with_score(question, k=5)
-
-print(f"Top {len(docs_with_scores)} results for the question: '{question}'\n")
-
-for i, (doc, score) in enumerate(docs_with_scores):
-    # print(f"Result {i + 1} (Score: {score}):\n{doc.page_content}\n")
-    print(f"Result {i + 1} (Score: {score})\n")
-
-context = "\n\n".join([doc.page_content for doc, _ in docs_with_scores])
-
-
-response = client.chat.completions.create(
-    model="gpt-4.1",
-    messages=[
-        {"role": "system",
-         "content": "You are a helpful assistant. Use the provided context."},
-        {"role": "user",
-         "content": f"Context:\n{context}\n\nQuestion: {question}"}
-    ]
+db = FAISS.load_local(
+    "vector_db/qc_lecture_db",
+    embedding,
+    allow_dangerous_deserialization=True     
 )
 
-print(response.choices[0].message.content)
+retriever = db.as_retriever(search_kwargs={"k": 5})
+
+
+llm = ChatOpenAI(
+    model_name="gpt-4o-mini",               
+    temperature=0.2,                        
+    openai_api_key=os.getenv("OPEN_AI_KEY") 
+)
+
+qa_chain = ConversationalRetrievalChain.from_llm(llm, retriever)
+
+
+
+
+def main() -> None:
+    chat_history = []
+    print("Ask me anything about the lecture notes!  (type 'exit' to quit)\n")
+    while True:
+        try:
+            question = input("> ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print("\nGood-bye!")
+            break
+
+        if question.lower() in {"exit", "quit"}:
+            break
+        if not question:
+            continue
+
+        result = qa_chain({"question": question, "chat_history": chat_history})
+        answer = result["answer"]
+        print("\n" + answer + "\n")
+
+        chat_history.append((question, answer))
+
+
+if __name__ == "__main__":
+    main()
