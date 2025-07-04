@@ -15,8 +15,6 @@ It uses **LangChain**, **FAISS**, and **OpenAI GPT** models.
 | 4 | **Chat in the terminal** | `python main.py` |
 
 
-> **Note:** Step 4 deletes any existing index at `vector_db/qc_lecture_db` and rebuilds it from scratch.
-
 ---
 
 ## 🔍 What each step does
